@@ -15,6 +15,7 @@ module Hubspot
     ADD_CONTACT_TO_COMPANY_PATH       = "/companies/v2/companies/:company_id/contacts/:vid"
     DESTROY_COMPANY_PATH              = "/companies/v2/companies/:company_id"
     GET_COMPANY_CONTACTS_PATH         = "/companies/v2/companies/:company_id/contacts"
+    BATCH_UPDATE_PATH                 = "/companies/v1/batch-async/update"
 
     class << self
       # Find all companies by created date (descending)
