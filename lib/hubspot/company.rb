@@ -11,6 +11,7 @@ module Hubspot
     GET_COMPANY_BY_ID_PATH           = "/companies/v2/companies/:company_id"
     GET_COMPANY_BY_DOMAIN_PATH       = "/companies/v2/domains/:domain/companies"
     UPDATE_COMPANY_PATH              = "/companies/v2/companies/:company_id"
+    GET_COMPANY_CONTACT_VIDS_PATH    = "/companies/v2/companies/:company_id/vids"
     ADD_CONTACT_TO_COMPANY_PATH      = "/companies/v2/companies/:company_id/contacts/:vid"
     DESTROY_COMPANY_PATH             = "/companies/v2/companies/:company_id"
     GET_COMPANY_CONTACTS_PATH        = "/companies/v2/companies/:company_id/contacts"
@@ -37,6 +38,33 @@ module Hubspot
 
         response = Hubspot::Connection.get_json(path, opts)
         response['results'].map { |c| new(c) }
+      end
+
+      # Find all companies by created date (descending)
+      #    recently_updated [boolean] (for querying all accounts by modified time)
+      #    count [Integer] for pagination
+      #    offset [Integer] for pagination
+      # {http://developers.hubspot.com/docs/methods/companies/get_companies_created}
+      # {http://developers.hubspot.com/docs/methods/companies/get_companies_modified}
+      # @return [Object], you can get:
+      # response.results for [Array]
+      # response.hasMore for [Boolean]
+      # response.offset for [Integer]
+      def all_with_offset(opts = {})
+        recently_updated = opts.delete(:recently_updated) { false }
+
+        path = if recently_updated
+          RECENTLY_MODIFIED_COMPANIES_PATH
+        else
+          RECENTLY_CREATED_COMPANIES_PATH
+        end
+
+        response = Hubspot::Connection.get_json(path, opts)
+        response_with_offset = {}
+        response_with_offset['results'] = response['results'].map { |c| new(c) }
+        response_with_offset['hasMore'] = response['hasMore']
+        response_with_offset['offset'] = response['offset']
+        response_with_offset
       end
 
       # Finds a list of companies by domain
@@ -123,6 +151,20 @@ module Hubspot
         end
         Hubspot::Connection.post_json(BATCH_UPDATE_PATH, params: {}, body: query)
       end
+    
+      # Adds contact to a company
+      # {http://developers.hubspot.com/docs/methods/companies/add_contact_to_company}
+      # @param company_vid [Integer] The ID of a company to add a contact to
+      # @param contact_vid [Integer] contact id to add
+      # @return parsed response
+      def add_contact!(company_vid, contact_vid)
+        Hubspot::Connection.put_json(ADD_CONTACT_TO_COMPANY_PATH,
+                                     params: {
+                                       company_id: company_vid,
+                                       vid: contact_vid,
+                                     },
+                                     body: nil)
+      end
     end
 
     attr_reader :properties
@@ -149,6 +191,24 @@ module Hubspot
       self
     end
 
+    # Gets ALL contact vids of a company
+    # May make many calls if the company has a mega-ton of contacts
+    # {http://developers.hubspot.com/docs/methods/companies/get_company_contacts_by_id}
+    # @return [Array] contact vids
+    def get_contact_vids
+      vid_offset = nil
+      vids = []
+      loop do
+        data = Hubspot::Connection.get_json(GET_COMPANY_CONTACT_VIDS_PATH,
+                                            company_id: vid,
+                                            vidOffset: vid_offset)
+        vids += data['vids']
+        return vids unless data['hasMore']
+        vid_offset = data['vidOffset']
+      end
+      vids # this statement will never be executed.
+    end
+
     # Adds contact to a company
     # {http://developers.hubspot.com/docs/methods/companies/add_contact_to_company}
     # @param id [Integer] contact id to add
@@ -159,12 +219,7 @@ module Hubspot
                     else
                       contact_or_vid
                     end
-      Hubspot::Connection.put_json(ADD_CONTACT_TO_COMPANY_PATH,
-                                   params: {
-                                     company_id: vid,
-                                     vid: contact_vid,
-                                   },
-                                   body: nil)
+      self.class.add_contact!(vid, contact_vid)
       self
     end
 
