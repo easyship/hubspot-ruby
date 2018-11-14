@@ -8,6 +8,7 @@ module Hubspot
     CREATE_COMPANY_PATH              = "/companies/v2/companies/"
     RECENTLY_CREATED_COMPANIES_PATH  = "/companies/v2/companies/recent/created"
     RECENTLY_MODIFIED_COMPANIES_PATH = "/companies/v2/companies/recent/modified"
+    ALL_COMPANIES_PATH               = "/companies/v2/companies/paged"
     GET_COMPANY_BY_ID_PATH           = "/companies/v2/companies/:company_id"
     GET_COMPANY_BY_DOMAIN_PATH       = "/companies/v2/domains/:domain/companies"
     UPDATE_COMPANY_PATH              = "/companies/v2/companies/:company_id"
@@ -40,29 +41,21 @@ module Hubspot
         response['results'].map { |c| new(c) }
       end
 
-      # Find all companies by created date (descending)
-      #    recently_updated [boolean] (for querying all accounts by modified time)
-      #    count [Integer] for pagination
+      # Find all companies
+      #    limit [Integer] for number of records to return
       #    offset [Integer] for pagination
-      # {http://developers.hubspot.com/docs/methods/companies/get_companies_created}
-      # {http://developers.hubspot.com/docs/methods/companies/get_companies_modified}
+      # {https://developers.hubspot.com/docs/methods/companies/get-all-companies}
       # @return [Object], you can get:
-      # response.results for [Array]
-      # response.hasMore for [Boolean]
+      # response.companies for [Array]
+      # response.has-more for [Boolean]
       # response.offset for [Integer]
       def all_with_offset(opts = {})
-        recently_updated = opts.delete(:recently_updated) { false }
-
-        path = if recently_updated
-          RECENTLY_MODIFIED_COMPANIES_PATH
-        else
-          RECENTLY_CREATED_COMPANIES_PATH
-        end
+        path = ALL_COMPANIES_PATH
 
         response = Hubspot::Connection.get_json(path, opts)
         response_with_offset = {}
-        response_with_offset['results'] = response['results'].map { |c| new(c) }
-        response_with_offset['hasMore'] = response['hasMore']
+        response_with_offset['companies'] = response['companies'].map { |c| new(c) }
+        response_with_offset['has-more'] = response['has-more']
         response_with_offset['offset'] = response['offset']
         response_with_offset
       end
