@@ -136,28 +136,24 @@ describe Hubspot::Contact do
         copmanies = Hubspot::Company.all(count: 2)
         expect(copmanies.size).to eql 2
       end
+    end
+
+    context 'all companies (page)' do
+      cassette 'find_all_companies_with_offset'
 
       context 'all_with_offset' do
         it 'should return companies with offset and hasMore' do
-          response = Hubspot::Company.all_with_offset
-          expect(response['results'].size).to eq(20)
-
-          first = response['results'].first
-          last = response['results'].last
-
-          expect(first).to be_a Hubspot::Company
-          expect(first.vid).to eq(42866817)
-          expect(first['name']).to eql 'name'
-          expect(last).to be_a Hubspot::Company
-          expect(last.vid).to eql 42861017
-          expect(last['name']).to eql 'Xge5rbdt2zm'
+          response = Hubspot::Company.all_with_offset(limit: 20)
+          expect(response['companies'].size).to eq(20)
+          expect(response['has-more']).to be_truthy
+          expect(response['offset']).to eq(117000846)
         end
 
         it 'must filter only 2 companies' do
-          response = Hubspot::Company.all_with_offset(count: 2)
-          expect(response['results'].size).to eq(2)
-          expect(response['hasMore']).to be_truthy
-          expect(response['offset']).to eq(2)
+          response = Hubspot::Company.all_with_offset(limit: 2)
+          expect(response['companies'].size).to eq(2)
+          expect(response['has-more']).to be_truthy
+          expect(response['offset']).to eq(115279791)
         end
       end
     end
