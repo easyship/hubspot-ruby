@@ -41,6 +41,7 @@ module Hubspot
         response['results'].map { |c| new(c) }
       end
 
+
       # Find all companies
       #    limit [Integer] for number of records to return
       #    offset [Integer] for pagination
@@ -118,7 +119,7 @@ module Hubspot
         response = Hubspot::Connection.post_json(CREATE_COMPANY_PATH, params: {}, body: post_data )
         new(response)
       end
-
+    
       # Adds contact to a company
       # {http://developers.hubspot.com/docs/methods/companies/add_contact_to_company}
       # @param company_vid [Integer] The ID of a company to add a contact to

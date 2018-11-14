@@ -136,7 +136,6 @@ describe Hubspot::Contact do
         copmanies = Hubspot::Company.all(count: 2)
         expect(copmanies.size).to eql 2
       end
-
     end
 
     context 'all companies (page)' do
